@@ -1,3 +1,4 @@
+import "./App.css";
 import { useEffect, useMemo, useState } from "react";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
