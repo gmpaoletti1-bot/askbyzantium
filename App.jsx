@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
-const AI_ENDPOINT = import.meta.env.VITE_ASK_BYZANTIUM_AI_ENDPOINT;
+const AI_ENDPOINT = import.meta.env.VITE_ASK_BYZANTIUM_AI_ENDPOINT || "/.netlify/functions/ask";
 
 const CORPORA = {
   IAMB: {
@@ -182,7 +182,7 @@ function App() {
     });
   }, [works, query, corpusFilter]);
 
-  function findPassages(text) {
+  function findPassages(text, semanticTerms = []) {
     const stopWords = new Set([
       "how", "what", "when", "where", "why", "who", "whom", "which",
       "should", "could", "would", "can", "may", "might", "do", "does",
@@ -198,7 +198,7 @@ function App() {
       .replace(/[\u0300-\u036f]/g, "")
       .split(/[^\p{L}\p{N}]+/u)
       .filter((word) => word.length > 2 && !stopWords.has(word));
-    const terms = [...new Set(tokenize(text))];
+    const terms = [...new Set([...tokenize(text), ...semanticTerms.flatMap((term) => tokenize(term))])];
     if (!terms.length) return [];
 
     const matches = [];
@@ -225,41 +225,46 @@ function App() {
     setAsking(true);
     setAnswer("");
     setAnswerError("");
-    const passages = findPassages(question);
-    setMatchedPassages(passages);
-    setAskStep(3);
-    if (!passages.length) {
-      setAnswer("I could not find a passage with matching words in the currently connected corpus. Try a different formulation or browse the texts directly.");
-      setAsking(false);
-      return;
-    }
-    if (!AI_ENDPOINT) {
-      setAnswer(
-        "I found passages that may be relevant. AI interpretation is not configured yet, so the results below are a transparent text search rather than a generated historical interpretation.",
-      );
-      setAsking(false);
-      return;
-    }
     try {
-      const response = await fetch(AI_ENDPOINT, {
+      const expansionResponse = await fetch(AI_ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "expand", question: question.trim(), feeling: selectedFeeling }),
+      });
+      if (!expansionResponse.ok) {
+        const detail = await expansionResponse.json().catch(() => ({}));
+        throw new Error(detail.error || `The interpretation service returned ${expansionResponse.status}.`);
+      }
+      const expansion = await expansionResponse.json();
+      const passages = findPassages(question, expansion.searchTerms || []);
+      setMatchedPassages(passages);
+      setAskStep(3);
+      if (!passages.length) {
+        setAnswer("I could not identify a sufficiently relevant passage in the connected corpus. The question has been translated into broader moral themes, but the surviving texts may not address this situation directly. Try another description or explore the corpus.");
+        return;
+      }
+      const interpretationResponse = await fetch(AI_ENDPOINT, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          action: "interpret",
           question: question.trim(),
+          feeling: selectedFeeling,
+          concepts: expansion.concepts || [],
           passages: passages.map(({ reference, verse, work }) => ({
-            reference,
-            greek: verse.greek,
-            translation: verse.translation,
-            author_or_corpus: work.corpusInfo.name,
-            manuscript: work.corpusInfo.manuscript,
+            reference, greek: verse.greek, translation: verse.translation,
+            author_or_corpus: work.corpusInfo.name, manuscript: work.corpusInfo.manuscript,
           })),
         }),
       });
-      if (!response.ok) throw new Error(`The interpretation service returned ${response.status}.`);
-      const data = await response.json();
-      setAnswer(data.answer || data.interpretation || "The interpretation service returned no answer.");
+      if (!interpretationResponse.ok) {
+        const detail = await interpretationResponse.json().catch(() => ({}));
+        throw new Error(detail.error || `The interpretation service returned ${interpretationResponse.status}.`);
+      }
+      const data = await interpretationResponse.json();
+      setAnswer(data.answer || "The manuscripts offer passages for reflection, but no interpretation was returned.");
     } catch (error) {
-      setAnswerError(error.message || "Could not generate an interpretation.");
+      setAnswerError(error.message || "Could not consult the interpretation service.");
     } finally {
       setAsking(false);
     }
