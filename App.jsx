@@ -225,6 +225,7 @@ function App() {
     setAsking(true);
     setAnswer("");
     setAnswerError("");
+    setAskStep(3);
     try {
       const expansionResponse = await fetch(AI_ENDPOINT, {
         method: "POST",
