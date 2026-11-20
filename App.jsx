@@ -143,6 +143,8 @@ function App() {
   const [answerError, setAnswerError] = useState("");
   const [asking, setAsking] = useState(false);
   const [matchedPassages, setMatchedPassages] = useState([]);
+  const [selectedFeeling, setSelectedFeeling] = useState("");
+  const [askStep, setAskStep] = useState(1);
 
   useEffect(() => {
     let active = true;
@@ -225,6 +227,7 @@ function App() {
     setAnswerError("");
     const passages = findPassages(question);
     setMatchedPassages(passages);
+    setAskStep(3);
     if (!passages.length) {
       setAnswer("I could not find a passage with matching words in the currently connected corpus. Try a different formulation or browse the texts directly.");
       setAsking(false);
@@ -341,26 +344,64 @@ function App() {
           </>
         ) : (
           <>
-            <p className="intro">Describe a moral question. Ask Byzantium will search the connected texts and show the passages that may speak to it.</p>
-            <form className="question-form" onSubmit={askCorpus}>
-              <textarea value={question} onChange={(event) => setQuestion(event.target.value)} placeholder="For example: How should I deal with envy?" rows={3} />
-              <button type="submit" disabled={asking || loading || !works.length}>{asking ? "Consulting the manuscripts…" : "Search for Byzantine counsel"}</button>
-            </form>
-            {answer && <section className="answer"><p className="eyebrow">RESPONSE</p><p>{answer}</p></section>}
-            {answerError && <p className="error">{answerError}</p>}
-            {!!matchedPassages.length && (
-              <section className="matched-passages">
-                <p className="eyebrow">PASSAGES FOUND IN THE CORPUS</p>
-                {matchedPassages.map(({ reference, verse, work }) => (
-                  <article className="passage" key={`${work.id}-${verse.number}`}>
-                    <p className="greek">{verse.greek || "Greek text not available"}</p>
-                    {verse.translation && <p className="translation">{verse.translation}</p>}
-                    <p className="metadata">{reference} · {work.corpusInfo.manuscript}</p>
-                  </article>
-                ))}
-              </section>
-            )}
-            <p className="disclaimer">The passages shown are retrieved from the database. Interpretations, when enabled, must be distinguished from the medieval text itself.</p>
+            <p className="intro">A moment of reflection. Tell us how you are feeling, then share as much or as little as you wish. The manuscripts will be consulted for passages that may speak to your situation.</p>
+            <div className="consultation">
+              <div className="consultation-progress"><span className={askStep >= 1 ? "current" : ""}>01</span><i /><span className={askStep >= 2 ? "current" : ""}>02</span><i /><span className={askStep >= 3 ? "current" : ""}>03</span></div>
+              {askStep === 1 && (
+                <section className="consultation-step">
+                  <p className="eyebrow">FIRST · YOUR STATE OF MIND</p>
+                  <h2>How are you feeling today?</h2>
+                  <p className="step-hint">Choose the feeling closest to what is on your mind.</p>
+                  <div className="feeling-grid">
+                    {[
+                      ["😠","Angry"],["😔","Sad"],["😟","Anxious"],["💚","Envious"],
+                      ["🌫️","Confused"],["🪶","Lonely"],["🤝","Troubled by others"],["☀️","Hopeful"]
+                    ].map(([symbol, label]) => (
+                      <button type="button" key={label} className={selectedFeeling === label ? "feeling-card selected" : "feeling-card"} onClick={() => { setSelectedFeeling(label); setAskStep(2); }}>
+                        <span>{symbol}</span>{label}
+                      </button>
+                    ))}
+                  </div>
+                  <button type="button" className="quiet-action" onClick={() => { setSelectedFeeling(""); setAskStep(2); }}>I would rather describe it myself →</button>
+                </section>
+              )}
+              {askStep === 2 && (
+                <section className="consultation-step">
+                  <p className="eyebrow">SECOND · YOUR STORY</p>
+                  <h2>{selectedFeeling ? `You are feeling ${selectedFeeling.toLowerCase()}.` : "What is on your mind?"}</h2>
+                  <p className="step-hint">What happened? What is troubling you? You can write a question or simply tell your story.</p>
+                  <form className="question-form" onSubmit={askCorpus}>
+                    <textarea value={question} onChange={(event) => setQuestion(event.target.value)} placeholder="Tell us what happened…" rows={4} />
+                    <div className="step-actions">
+                      <button type="button" className="secondary-action" onClick={() => setAskStep(1)}>← Back</button>
+                      <button type="submit" disabled={asking || loading || !works.length || !question.trim()}>{asking ? "Consulting the manuscripts…" : "Consult the manuscripts →"}</button>
+                    </div>
+                  </form>
+                </section>
+              )}
+              {askStep === 3 && (
+                <section className="consultation-step">
+                  <p className="eyebrow">THIRD · THE MANUSCRIPTS SPEAK</p>
+                  <h2>Byzantine counsel</h2>
+                  {answer && <section className="answer"><p className="eyebrow">A REFLECTION</p><p>{answer}</p></section>}
+                  {answerError && <p className="error">{answerError}</p>}
+                  {!!matchedPassages.length && (
+                    <section className="matched-passages">
+                      <p className="eyebrow">PASSAGES FOUND IN THE CORPUS</p>
+                      {matchedPassages.map(({ reference, verse, work }) => (
+                        <article className="passage" key={`${work.id}-${verse.number}`}>
+                          <p className="greek">{verse.greek || "Greek text not available"}</p>
+                          {verse.translation && <p className="translation">{verse.translation}</p>}
+                          <p className="metadata">{reference} · {work.corpusInfo.manuscript}</p>
+                        </article>
+                      ))}
+                    </section>
+                  )}
+                  <p className="disclaimer">The passages are drawn from the database. Any contemporary interpretation is distinct from the medieval text.</p>
+                  <div className="step-actions"><button type="button" className="secondary-action" onClick={() => setAskStep(2)}>← Back to your story</button><button type="button" className="restart-action" onClick={() => { setAskStep(1); setSelectedFeeling(""); setQuestion(""); setAnswer(""); setAnswerError(""); setMatchedPassages([]); }}>Begin a new consultation</button></div>
+                </section>
+              )}
+            </div>
           </>
         )}
         <footer className="footer">ASK BYZANTIUM · A DIGITAL EXPERIMENT IN BYZANTINE PARAENESIS</footer>
