@@ -181,20 +181,29 @@ function App() {
   }, [works, query, corpusFilter]);
 
   function findPassages(text) {
-    const terms = text
+    const stopWords = new Set([
+      "how", "what", "when", "where", "why", "who", "whom", "which",
+      "should", "could", "would", "can", "may", "might", "do", "does",
+      "did", "is", "are", "was", "were", "be", "been", "being",
+      "i", "me", "my", "we", "our", "you", "your", "he", "she", "they",
+      "it", "a", "an", "the", "and", "or", "but", "to", "of", "in",
+      "on", "at", "for", "from", "with", "about", "into", "through",
+      "deal", "get", "make"
+    ]);
+    const tokenize = (value) => value
       .toLocaleLowerCase()
       .normalize("NFD")
       .replace(/[\u0300-\u036f]/g, "")
       .split(/[^\p{L}\p{N}]+/u)
-      .filter((word) => word.length > 2);
+      .filter((word) => word.length > 2 && !stopWords.has(word));
+    const terms = [...new Set(tokenize(text))];
+    if (!terms.length) return [];
+
     const matches = [];
     works.forEach((work) => {
       work.verses.forEach((verse) => {
-        const haystack = `${verse.greek} ${verse.translation}`
-          .toLocaleLowerCase()
-          .normalize("NFD")
-          .replace(/[\u0300-\u036f]/g, "");
-        const score = terms.reduce((total, term) => total + (haystack.includes(term) ? 1 : 0), 0);
+        const verseTokens = new Set(tokenize(`${verse.greek} ${verse.translation}`));
+        const score = terms.reduce((total, term) => total + (verseTokens.has(term) ? 1 : 0), 0);
         if (score > 0) {
           matches.push({
             score,
