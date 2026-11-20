@@ -51,3 +51,22 @@ details p { line-height: 1.5; }
 .disclaimer { margin-top: 25px; color: #88745a; font: 11px/1.6 Arial, sans-serif; }
 .footer { margin-top: 42px; padding-top: 18px; border-top: 1px solid #ceb98d; color: #987f5c; text-align: center; font: 9px/1.5 Arial, sans-serif; letter-spacing: .14em; }
 @media (max-width: 680px) { .app-shell { padding: 16px 10px; } .codex { padding: 28px 18px; } .toolbar, .work-list { grid-template-columns: 1fr; } .stats { gap: 14px; } .greek { font-size: 19px; } }
+
+.consultation { max-width: 760px; margin: 28px auto 0; }
+.consultation-progress { display:flex; align-items:center; justify-content:center; gap:12px; margin: 0 auto 30px; color:#b8a27c; font:12px Arial,sans-serif; letter-spacing:.08em; }
+.consultation-progress span { display:grid; place-items:center; width:32px; height:32px; border:1px solid #cdbb98; border-radius:50%; }
+.consultation-progress span.current { color:#fff8e8; background:#7a3428; border-color:#7a3428; }
+.consultation-progress i { width:48px; height:1px; background:#d7c7a6; }
+.consultation-step { padding: 4px 0 10px; }
+.consultation-step h2 { margin: 8px 0; color:#503720; text-align:center; font-size:clamp(24px,4vw,32px); font-weight:500; }
+.step-hint { margin: 0 auto 22px; max-width:620px; color:#79664e; text-align:center; line-height:1.65; }
+.feeling-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; }
+.feeling-card { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:9px; min-height:105px; padding:14px 8px; color:#5b452d; background:#fffdf7; border:1px solid #d9cbaa; transition:background .15s,border-color .15s,transform .15s; }
+.feeling-card span { font-size:25px; }
+.feeling-card:hover,.feeling-card.selected { background:#efe3cd; border-color:#8d4a36; transform:translateY(-1px); }
+.quiet-action { display:block; margin:18px auto 0; padding:8px 4px; color:#7a3428; background:none; border:0; border-bottom:1px solid #b89a63; }
+.step-actions { display:flex; justify-content:center; align-items:center; flex-wrap:wrap; gap:10px; margin-top:14px; }
+.step-actions .secondary-action,.step-actions .restart-action { padding:13px 17px; color:#765a35; background:transparent; border:1px solid #b89a63; }
+.step-actions .restart-action { color:#fff8e8; background:#7a3428; border-color:#7a3428; }
+.question-form .step-actions button { margin:0; }
+@media(max-width:680px) { .feeling-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .feeling-card { min-height:88px; } }
