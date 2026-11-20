@@ -19,19 +19,24 @@ The public/anon role must have read-only SELECT access, through Row Level Securi
 
 ## AI interpretation endpoint
 
-The question page currently performs transparent keyword retrieval from the Greek and translation fields and displays the matching source passages. It does not yet generate an AI interpretation.
+The Ask page uses a server-side Netlify Function at `/.netlify/functions/ask`. It has two stages:
 
-To enable interpretation, deploy a server-side HTTPS function and set:
+1. **Semantic expansion:** an AI model translates the user's everyday description into broader moral concepts and search terms. For example, a problem with a manager may be reframed through concepts such as conflict, anger, envy, injustice, patience, endurance, or self-control.
+2. **Grounded interpretation:** the app retrieves candidate verses from the database and sends only those source passages to the model. The model must distinguish the medieval text from a contemporary reflection and say when the connection is weak.
 
-- `VITE_ASK_BYZANTIUM_AI_ENDPOINT`: its HTTPS URL
+### Required Netlify secret
 
-The function receives JSON with `question` and a `passages` array. It should return JSON such as:
+Add this environment variable in Netlify:
 
-```json
-{ "answer": "A historically cautious interpretation grounded in the supplied passages." }
-```
+- `OPENAI_API_KEY`: an API key from an OpenAI API account.
 
-Keep all private model-provider API keys inside the server-side function's secrets, never in a `VITE_` variable. The function should instruct the model not to invent quotations, authors, manuscript shelfmarks, or historical claims beyond the supplied evidence.
+This is a **server-side secret**. Do not prefix it with `VITE_`, do not put it in GitHub, and do not paste it into the frontend. The function uses the `gpt-4o-mini` API model. API usage is billed separately by OpenAI and is not included in a ChatGPT subscription.
+
+The frontend endpoint defaults to `/.netlify/functions/ask`, so no `VITE_ASK_BYZANTIUM_AI_ENDPOINT` variable is required unless you deploy the function elsewhere.
+
+After adding the secret, trigger a new Netlify deploy. If the secret is missing, the page will show a configuration message rather than silently pretending that keyword matching is AI interpretation.
+
+The model is instructed not to invent quotations, authors, manuscript shelfmarks, or historical claims beyond the supplied passages. This is an interpretive aid, not a substitute for scholarly verification.
 
 ## Test before merging
 
