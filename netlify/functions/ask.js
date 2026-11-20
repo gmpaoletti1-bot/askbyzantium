@@ -48,7 +48,7 @@ async function askOpenAI(messages, maxTokens = 700) {
   }
 }
 
-exports.handler = async (event) => {
+export const handler = async (event) => {
   if (event.httpMethod !== "POST") return json(405, { error: "Use POST for this endpoint." });
 
   try {
